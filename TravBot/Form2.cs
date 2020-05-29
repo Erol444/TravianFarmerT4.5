@@ -169,7 +169,7 @@ namespace TravBot
             {
                 //<a href="position_details.php?x=67&amp;y=-80">New village</a>
                 var villName = farm.ChildNodes.FirstOrDefault(x => x.HasClass("village")).ChildNodes.FirstOrDefault(x => x.Name == "a").InnerText;
-                if (dontFarm.Any(x => villName.ToLower().StartsWith(x.ToLower()))) continue;
+                if (dontFarm.Any(illegalName => villName.ToLower().Contains(illegalName.ToLower()))) continue;
 
                 //<img src="img/x.gif" class="iReport iReport1" alt="Won as attacker without losses.">
                 // iReport1 => Green sword, no loss
