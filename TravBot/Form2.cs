@@ -51,14 +51,12 @@ namespace TravBot
     {
         string sql;
         SQLiteConnection con;
-        public static List<HelperClass.Farm> ListOfFarms = new List<HelperClass.Farm>();
-        public static List<HelperClass.FarmLists> NewListOfFL = new List<HelperClass.FarmLists>();
-        public static List<HelperClass.FarmLists> ListOfFL = new List<HelperClass.FarmLists>();
-        public static List<HelperClass.Villages> Villages = new List<HelperClass.Villages>();
-        public static List<HelperClass.Villages> NewVillages = new List<HelperClass.Villages>();
+        public List<FarmList> NewListOfFL = new List<FarmList>();
+        public List<FarmList> ListOfFL = new List<FarmList>();
+        public List<Village> Villages = new List<Village>();
+        public List<Village> NewVillages = new List<Village>();
         int FLvillnum;
         public string sel_name, sel_pass, sel_server, sel_db;
-        HelperClass tools = new HelperClass();
         public Form1 main;
         public byte count = 0;
 
@@ -78,7 +76,7 @@ namespace TravBot
             Thread LoginThread = new Thread(new ThreadStart(Login_thread));
             LoginThread.Start();
 
-            con = new SQLiteConnection(tools.DB(sel_db));
+            con = new SQLiteConnection(Helper.DB(sel_db));
             con.Open();
             sql = "Select * from FLgeneral";
             SQLiteCommand command = new SQLiteCommand(sql, con);
@@ -92,14 +90,14 @@ namespace TravBot
         private void Login_thread()
         {
             DoInvoke(delegate { GoTo(sel_server); });
-            Thread.Sleep(tools.ReturnRandom(3500));
+            Thread.Sleep(Helper.ReturnRandom(3500));
             DoInvoke(delegate
             {
                 HtmlElementCollection elements = webBrowser1.Document.GetElementsByTagName("input");
                 elements[1].SetAttribute("value", sel_name);
                 elements[2].SetAttribute("value", sel_pass);
             });
-            Thread.Sleep(tools.ReturnRandom(500));
+            Thread.Sleep(Helper.ReturnRandom(500));
             DoInvoke(delegate
             {
                 webBrowser1.Document.GetElementById("s1").InvokeMember("Click");
@@ -116,11 +114,11 @@ namespace TravBot
             else { del(); }
         }
 
-        public void Send_FL(int FL_num, bool send2, bool send3)
+        public void SendFarmlist(int FL_num, bool send2, bool send3)
         {
-            Read_FL();
+            ReadFarmlist();
             count++;
-            richTextBox1.Text = DateTime.Now.ToLocalTime() + ": Will send FL num:" + FL_num + "  ListOfFarmsCount:" + ListOfFarms.Count + "  NewListOfFLCount:" + NewListOfFL.Count + "\n" + richTextBox1.Text;
+            richTextBox1.Text = DateTime.Now.ToLocalTime() + ": Will send FL num:" + FL_num + "  NewListOfFLCount:" + NewListOfFL.Count + "\n" + richTextBox1.Text;
 
             if (webBrowser1.Document.GetElementById("recaptcha_widget") != null || webBrowser1.Document.GetElementById("recaptcha_image") != null)
             {
@@ -141,7 +139,7 @@ namespace TravBot
                 return;
             }
             List<string> dontFarm = new List<string>();
-            con = new SQLiteConnection(tools.DB(sel_db));
+            con = new SQLiteConnection(Helper.DB(sel_db));
             con.Open();
             sql = "Select * from DontFarm";
             SQLiteCommand command = new SQLiteCommand(sql, con);
@@ -195,10 +193,9 @@ namespace TravBot
             Console.WriteLine("Should have sent the FL " + count);
         }
 
-        public void Read_FL()
+        public void ReadFarmlist()
         {
             NewListOfFL.Clear();
-            ListOfFarms.Clear();
 
             HtmlAgilityPack.HtmlDocument html = new HtmlAgilityPack.HtmlDocument();
             html.LoadHtml(webBrowser1.DocumentText);
@@ -207,7 +204,7 @@ namespace TravBot
 
             foreach (var raidList in raidLists)
             {
-                NewListOfFL.Add(new HelperClass.FarmLists
+                NewListOfFL.Add(new FarmList
                 {
                     FLId = raidList.GetAttributeValue("id", ""),
                     FLName = raidList.Descendants("div").FirstOrDefault(x => x.HasClass("listTitleText")).InnerText.Trim(),
@@ -215,10 +212,10 @@ namespace TravBot
             }
         }
 
-        public void Update_Villages()
+        public void UpdateVillages()
         {
             Read_Villages();
-            con = new SQLiteConnection(tools.DB(sel_db));
+            con = new SQLiteConnection(Helper.DB(sel_db));
             con.Open();
             sql = "DELETE FROM Villages";
             SQLiteCommand command = new SQLiteCommand(sql, con);
@@ -237,21 +234,21 @@ namespace TravBot
         {
             richTextBox1.Text = DateTime.Now.ToLocalTime() + ": Reading villages\n" + richTextBox1.Text;
             FLvillnum = villnum;
-            Thread ReadThread = new Thread(new ThreadStart(Read_All_Thread));
+            Thread ReadThread = new Thread(new ThreadStart(ReadAllThread));
             ReadThread.Start();
         }
-        public void Read_All_Thread()
+        public void ReadAllThread()
         {
-            DoInvoke(delegate { Update_Villages(); });
+            DoInvoke(delegate { UpdateVillages(); });
             DoInvoke(delegate { ChangeVillage(FLvillnum); });
-            Thread.Sleep(tools.ReturnRandom(500));
+            Thread.Sleep(Helper.ReturnRandom(500));
             DoInvoke(delegate { GoTo("https://" + sel_server + "/build.php?tt=99&id=39"); });
-            Thread.Sleep(tools.ReturnRandom(500));
+            Thread.Sleep(Helper.ReturnRandom(500));
             DoInvoke(delegate
             {
-                readLists();
+                ReadLists();
             });
-            Thread.Sleep(tools.ReturnRandom(500));
+            Thread.Sleep(Helper.ReturnRandom(500));
         }
 
         private void button1_Click(object sender, EventArgs e)
@@ -259,7 +256,7 @@ namespace TravBot
             GoTo(textBox1.Text);
         }
 
-        public void switchToFl(int villnum)
+        public void SwitchToFl(int villnum)
         {
             richTextBox1.Text = DateTime.Now.ToLocalTime() + ": Switching to FarmList, default village: " + villnum + "\n" + richTextBox1.Text;
             FLvillnum = villnum;
@@ -273,7 +270,7 @@ namespace TravBot
         public void SwitchToFl_Thread()
         {
             DoInvoke(delegate { ChangeVillage(FLvillnum); });
-            Thread.Sleep(tools.ReturnRandom(500));
+            Thread.Sleep(Helper.ReturnRandom(500));
             DoInvoke(delegate { GoTo("https://" + sel_server + "/build.php?tt=99&id=39"); });
         }
 
@@ -300,7 +297,7 @@ namespace TravBot
                  */
                 var span = vill.Descendants("span").FirstOrDefault(x => x.HasClass("coordinatesGrid"));
 
-                NewVillages.Add(new HelperClass.Villages
+                NewVillages.Add(new Village
                 {
                     Id = span.GetAttributeValue("data-did", ""),
                     Name = span.GetAttributeValue("data-villagename", ""),
@@ -313,18 +310,18 @@ namespace TravBot
             GoTo("https://" + sel_server + "/dorf1.php" + NewVillages.ElementAt(villageNUM).Id);
         }
 
-        public void readLists()
+        public void ReadLists()
         {
-            Read_FL();
+            ReadFarmlist();
             bool FoundID = true;
-            con = new SQLiteConnection(tools.DB(sel_db));
+            con = new SQLiteConnection(Helper.DB(sel_db));
             con.Open();
             sql = "select * from FL order by num";
             SQLiteCommand command = new SQLiteCommand(sql, con);
             SQLiteDataReader reader = command.ExecuteReader();
             while (reader.Read())
             {
-                ListOfFL.Add(new HelperClass.FarmLists
+                ListOfFL.Add(new FarmList
                 {
                     FLId = reader["FLid"] + ""
                 });
@@ -342,7 +339,7 @@ namespace TravBot
                     command.ExecuteNonQuery();
 
 
-                    ListOfFL.Add(new HelperClass.FarmLists
+                    ListOfFL.Add(new FarmList
                     {
                         Period = NewListOfFL.ElementAt(i).Period,
                         Enabled = NewListOfFL.ElementAt(i).Enabled,

@@ -23,14 +23,12 @@ namespace TravBot
         private int timerlist, timercycle;
         private int FL_min, FL_max, FL_num_sent, FLvillnum;
         private bool login_finished = true;
-        private readonly HelperClass helperClass = new HelperClass();
         private readonly Form2 bot;
 
         private byte count = 0;
 
-        //STATS
-        public static List<HelperClass.Villages> Villages = new List<HelperClass.Villages>();
-        public static List<HelperClass.FarmLists> ListOfFL = new List<HelperClass.FarmLists>();
+        public List<Village> Villages = new List<Village>();
+        public List<FarmList> ListOfFL = new List<FarmList>();
         //SQL
         public string sql;
         public SQLiteConnection con;
@@ -45,7 +43,7 @@ namespace TravBot
             if (!File.Exists("Accounts.sqlite"))
             {
                 SQLiteConnection.CreateFile("Accounts.sqlite;");
-                con = new SQLiteConnection(helperClass.DB("Accounts"));
+                con = new SQLiteConnection(Helper.DB("Accounts"));
                 con.Open();
                 sql = "CREATE TABLE ACC (num INTEGER PRIMARY KEY AUTOINCREMENT, server TEXT, name TEXT, pass TEXT, db TEXT)";
                 SQLiteCommand command = new SQLiteCommand(sql, con);
@@ -54,7 +52,7 @@ namespace TravBot
             }
             else
             {
-                con = new SQLiteConnection(helperClass.DB("Accounts"));
+                con = new SQLiteConnection(Helper.DB("Accounts"));
                 con.Open();
                 sql = "select * from ACC order by num";
                 SQLiteCommand command = new SQLiteCommand(sql, con);
@@ -76,7 +74,7 @@ namespace TravBot
         {
             string new_db = textBox3.Text.Replace('.', '_') + "-" + textBox2.Text;
             SQLiteConnection.CreateFile(new_db + ".sqlite;");
-            con = new SQLiteConnection(helperClass.DB(new_db));
+            con = new SQLiteConnection(Helper.DB(new_db));
             con.Open();
             sql = "CREATE TABLE IF NOT EXISTS FL (num INTEGER PRIMARY KEY AUTOINCREMENT, FLid TEXT, FLname TEXT, Period NUMERIC, Enabled NUMERIC, Send2 NUMERIC, Send3 NUMERIC)";
             SQLiteCommand command = new SQLiteCommand(sql, con);
@@ -105,7 +103,7 @@ namespace TravBot
             con.Close();
             //sql = "CREATE TABLE ACC (num INTEGER PRIMARY KEY AUTOINCREMENT, server TEXT, name TEXT, pass TEXT)";
 
-            con = new SQLiteConnection(helperClass.DB("Accounts"));
+            con = new SQLiteConnection(Helper.DB("Accounts"));
             con.Open();
             sql = "insert into ACC(server, name, pass, db) values('" + textBox3.Text + "', '" + textBox2.Text + "', '" + textBox1.Text + "', '" + new_db + "')";
             command = new SQLiteCommand(sql, con);
@@ -119,7 +117,7 @@ namespace TravBot
         {
             if (comboBox1.SelectedIndex == -1) { return; }
             int i = 0;
-            con = new SQLiteConnection(helperClass.DB("Accounts"));
+            con = new SQLiteConnection(Helper.DB("Accounts"));
             con.Open();
             sql = "select * from ACC order by num";
             SQLiteCommand command = new SQLiteCommand(sql, con);
@@ -140,7 +138,7 @@ namespace TravBot
             Thread GetThread = new Thread(new ThreadStart(Get));
             GetThread.Start();
 
-            con = new SQLiteConnection(helperClass.DB(sel_db));
+            con = new SQLiteConnection(Helper.DB(sel_db));
             con.Open();
             sql = "Select * from FLgeneral";
             command = new SQLiteCommand(sql, con);
@@ -229,7 +227,7 @@ namespace TravBot
         {
             LabelNextCycle.Text = "Next Cycle in:" + timercycle;
             if (timercycle == 5) bot.Read_Villages();
-            if (timercycle == 3) bot.switchToFl(FLvillnum);
+            if (timercycle == 3) bot.SwitchToFl(FLvillnum);
             if (timercycle <= 0) {
                 Timer_List.Start();
                 Timer_Cycle.Stop();
@@ -245,7 +243,7 @@ namespace TravBot
             Label_FL_Count.Text = "FL to send: " + FL_num_sent;
             Label_Period.Text = "timerlist: " + timerlist;
             int indexNum = ListOfFL.Count - FL_num_sent;
-            if (timerlist > helperClass.ReturnSec(2))
+            if (timerlist > Helper.ReturnSec(2))
             {
                 if (ListOfFL.ElementAt(indexNum).Enabled)
                 {
@@ -258,7 +256,7 @@ namespace TravBot
                             Console.WriteLine("Sending FL " + indexNum+"   Count "+count);
                             ListOfFL.ElementAt(indexNum).Period_num = 1;
                             richTextBox1.Text = DateTime.Now.ToLocalTime() + ": Will send FL num: " + indexNum + " Total FL objects:" + ListOfFL.Count + "\n" + richTextBox1.Text;
-                            bot.Send_FL(indexNum, ListOfFL.ElementAt(indexNum).Send2, ListOfFL.ElementAt(indexNum).Send3);
+                            bot.SendFarmlist(indexNum, ListOfFL.ElementAt(indexNum).Send2, ListOfFL.ElementAt(indexNum).Send3);
                         }
                         catch (Exception) {
                             richTextBox1.Text = DateTime.Now.ToLocalTime() + ": ERROR AT SENDING FL\n" + richTextBox1.Text;
@@ -273,7 +271,7 @@ namespace TravBot
 
             if (FL_num_sent == 0)
             {
-                timercycle = helperClass.ReturnRandom(FL_min, FL_max);
+                timercycle = Helper.ReturnRandom(FL_min, FL_max);
                 Timer_List.Stop();
                 Timer_Cycle.Start();
             }
@@ -323,7 +321,7 @@ namespace TravBot
         {
             string imena = richTextBox2.Text.Replace(" ", String.Empty);
             string[] text = richTextBox2.Text.Split('\n');
-            con = new SQLiteConnection(helperClass.DB(sel_db));
+            con = new SQLiteConnection(Helper.DB(sel_db));
             con.Open();
             sql = "DELETE FROM DontFarm";
             SQLiteCommand command = new SQLiteCommand(sql, con);
@@ -342,7 +340,7 @@ namespace TravBot
         private void button11_Click(object sender, EventArgs e)
         {
             listBox1.Items.Clear();
-            con = new SQLiteConnection(helperClass.DB(sel_db));
+            con = new SQLiteConnection(Helper.DB(sel_db));
             con.Open();
             sql = "DELETE FROM FL";
             SQLiteCommand command = new SQLiteCommand(sql, con);
@@ -352,7 +350,7 @@ namespace TravBot
 
         private void button12_Click(object sender, EventArgs e) //Delete all accs
         {
-            con = new SQLiteConnection(helperClass.DB("Accounts"));
+            con = new SQLiteConnection(Helper.DB("Accounts"));
             con.Open();
             sql = "DELETE FROM ACC";
             SQLiteCommand command = new SQLiteCommand(sql, con);
@@ -373,7 +371,7 @@ namespace TravBot
         }
         public void Read_All_Thread()
         {
-            Thread.Sleep(helperClass.ReturnRandom(4000));
+            Thread.Sleep(Helper.ReturnRandom(4000));
             DoInvoke(delegate {
                 FL_box_update();
                 Village_update();
@@ -392,7 +390,7 @@ namespace TravBot
         {
             if (!login_finished)
             {
-                con = new SQLiteConnection(helperClass.DB(sel_db));
+                con = new SQLiteConnection(Helper.DB(sel_db));
                 con.Open();
                 sql = "DELETE FROM FLgeneral";
                 SQLiteCommand command = new SQLiteCommand(sql, con);
@@ -424,7 +422,7 @@ namespace TravBot
         {
             listBox1.Items.Clear();
             ListOfFL.Clear();
-            con = new SQLiteConnection(helperClass.DB(sel_db));
+            con = new SQLiteConnection(Helper.DB(sel_db));
             con.Open();
             sql = "select * from FL";
             SQLiteCommand command = new SQLiteCommand(sql, con);
@@ -432,7 +430,7 @@ namespace TravBot
             while (reader.Read())
             {
                 listBox1.Items.Add("->"+reader["FLname"] + "");
-                ListOfFL.Add(new HelperClass.FarmLists
+                ListOfFL.Add(new FarmList
                 {
                     Period = Convert.ToInt32(reader["Period"] + ""),
                     Enabled = Convert.ToBoolean(reader["Enabled"]),
@@ -449,7 +447,7 @@ namespace TravBot
         public void Village_update() {
             Villages.Clear();
             comboBox2.Items.Clear();
-            con = new SQLiteConnection(helperClass.DB(sel_db));
+            con = new SQLiteConnection(Helper.DB(sel_db));
             con.Open();
             sql = "select * from Villages";
             SQLiteCommand command = new SQLiteCommand(sql, con);
@@ -457,7 +455,7 @@ namespace TravBot
             while (reader.Read())
             {
                 comboBox2.Items.Add(reader["name"] + "");
-                Villages.Add(new HelperClass.Villages
+                Villages.Add(new Village
                 {
                     Id = reader["id"]+"",
                     Name = reader["name"]+"",
